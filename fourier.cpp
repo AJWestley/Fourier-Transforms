@@ -12,9 +12,9 @@ int main() {
     v[2] = 3;
     v[3] = 4;
     printVector(v);
-    v = fftRadix2(v, false);
+    fftRadix2(v, false);
     printVector(v);
-    v = fftRadix2(v, true);
+    fftRadix2(v, true);
     printVector(v);
     return EXIT_SUCCESS;
 }
@@ -34,7 +34,7 @@ int main() {
  * 
  * @throws std::invalid_argument If the input vector is empty.
  */
-std::vector<std::complex<double>> fft(std::vector<std::complex<double>> v, bool inverse /*= false*/) {
+void fft(std::vector<std::complex<double>>& v, bool inverse /*= false*/) {
     int n = v.size();
 
     if (n == 0) {
@@ -42,13 +42,14 @@ std::vector<std::complex<double>> fft(std::vector<std::complex<double>> v, bool 
     }
 
     // Ideal case - vector size is a power of 2
-    if (isPowerOf2(n)) 
-        return fftRadix2(v, inverse);
+    if (isPowerOf2(n)) {
+        fftRadix2(v, inverse);
+        return;
+    }
     
     // Non-ideal case - vector size not a power of 2
     v.resize(nextPowerOf2(n), 0);
-    v = fftRadix2(v, inverse);
-    return v;
+    fftRadix2(v, inverse);
 }
 
 /**
@@ -64,11 +65,11 @@ std::vector<std::complex<double>> fft(std::vector<std::complex<double>> v, bool 
  *
  * @throws std::invalid_argument If the length of the input vector 'v' is not a power of 2, an exception is thrown.
  */
-std::vector<std::complex<double>> fftRadix2(std::vector<std::complex<double>> v, bool inverse /*= false*/) {
+void fftRadix2(std::vector<std::complex<double>>& v, bool inverse /*= false*/) {
     // Base case
     int n = v.size();
     if (n == 1) {
-        return v;
+        return;
     }
     
     // Error check before run
@@ -85,8 +86,8 @@ std::vector<std::complex<double>> fftRadix2(std::vector<std::complex<double>> v,
     }
 
     // Recursively calculate sub-vectors
-    vEven = fftRadix2(vEven, inverse);
-    vOdd = fftRadix2(vOdd, inverse);
+    fftRadix2(vEven, inverse);
+    fftRadix2(vOdd, inverse);
 
     // Combine to get full vector
     double angle = D_PI / n * (inverse ? 1 : -1);
@@ -100,8 +101,6 @@ std::vector<std::complex<double>> fftRadix2(std::vector<std::complex<double>> v,
         }
         w *= wn;
     }
-
-    return v;
 }
 
 /**

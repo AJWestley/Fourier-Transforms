@@ -5,8 +5,8 @@
 #include <vector>
 #include <iostream>
 
-std::vector<std::complex<double>> fft(std::vector<std::complex<double>> v, bool inverse = false);
-std::vector<std::complex<double>> fftRadix2(std::vector<std::complex<double>> v, bool inverse = false);
+void fft(std::vector<std::complex<double>>& v, bool inverse = false);
+void fftRadix2(std::vector<std::complex<double>>& v, bool inverse = false);
 std::vector<std::vector<std::complex<double>>> fourierMatrix(int N, bool inverse = false);
 void printVector(const std::vector<std::complex<double>>& v);
 void printMatrix(const std::vector<std::vector<std::complex<double>>>& M);
