@@ -1,5 +1,10 @@
 <h1 align="center">Fourier Transforms</h1>
-<p align="center">A C++ library of discrete Fourier transform methods.</p>
+<p align="center">A C++ library of Discrete Fourier Transform (DFT) methods.</p>
+
+## Overview
+
+This library contains various Discrete Fourier Transform (DFT) methods that can be used in C++. </br>
+All the functions live inside the 'fourier' namespace. 
 
 ## Main Methods
 
@@ -21,8 +26,8 @@ Perform a Fast Fourier Transform (FFT) or Inverse FFT (IFFT) on a complex-valued
 #### Example:
 ```c++
 std::vector<std::complex<double>> v = {4, 0, 0, 0, 0};
-fft(v); // v now = {4, 4, 4, 4, 4, 4, 4, 4}
-fft(v, true); // v now = {4, 0, 0, 0, 0, 0, 0, 0}
+fourier::fft(v); // v now = {4, 4, 4, 4, 4, 4, 4, 4}
+fourier::fft(v, true); // v now = {4, 0, 0, 0, 0, 0, 0, 0}
 ```
 
 ### **fftRadix2**
@@ -43,8 +48,8 @@ Perform a Fast Fourier Transform (FFT) or Inverse FFT (IFFT) on a complex-valued
 #### Example:
 ```c++
 std::vector<std::complex<double>> v = {4, 0, 0, 0};
-fftRadix2(v); // v now = {4, 4, 4, 4}
-fftRadix2(v, true); // v now = {4, 0, 0, 0}
+fourier::fftRadix2(v); // v now = {4, 4, 4, 4}
+fourier::fftRadix2(v, true); // v now = {4, 0, 0, 0}
 ```
 
 ### **fourierMatrix**
@@ -65,51 +70,23 @@ Generates a Fourier matrix of size N.
 ```c++
 std::vector<std::vector<std::complex<double>>> F4;
 
-F4 = fourierMatrix(4);
+F4 = fourier::fourierMatrix(4);
 // F4 ->  {{1,  1,  1,  1},
 //         {1,  i, -1, -i},
 //         {1, -1,  1, -1},
 //         {1, -i, -1,  i}}
 
-F4 = fourierMatrix(4, true);
+F4 = fourier::fourierMatrix(4, true);
 // F4 ->  {{1,  1,  1,  1},
 //         {1, -i, -1,  i},
 //         {1, -1,  1, -1},
 //         {1,  i, -1, -i}}
 ```
 
-## Auxilliary Methods
-
-### **printVector**
-
-Prints a one-dimensional vector of complex numbers to the standard output.
-
-#### Parameters:
- * **v**: The vector of complex numbers to be printed.
-
-### **printMatrix**
-
-Prints a two-dimensional matrix of complex numbers to the standard output.
-
-#### Parameters:
- * **M**: The matrix of complex numbers to be printed.
-
-### **nextPowerOf2**
-
-Find the next power of 2 greater than or equal to the given integer.
-
-#### Parameters:
- * **n**: An integer for which the next power of 2 needs to be found.
-
-#### Returns:
- * The smallest power of 2 greater than or equal to 'n'.
-
-### isPowerOf2
-
-Find if an integer is a power of 2.
-
-#### Parameters:
- * **n**: The integer to evaluate.
-
-#### Returns:
- * True if the integer is a power of 2, false otherwise.
+## To be added:
+ * FFT Shift
+ * Fast Convolution
+ * 2D FFT
+ * Mixed-radix FFT
+ * Unit Tests
+ * Support for additional datatypes
