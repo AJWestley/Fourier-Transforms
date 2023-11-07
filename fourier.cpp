@@ -1,21 +1,29 @@
 #include <complex>
 #include <vector>
 #include <iostream>
+#include <omp.h>
 #include "fourier.h"
+
+#include <chrono>
 
 const double D_PI = 2 * M_PI;
 const std::complex<double> I(0, 1);
+const unsigned int PARALLEL_LIMIT = pow(2, 8);
 
+using namespace std::chrono;
 int main() {
-    std::vector<std::complex<double>> v(4, 1);
-    v[1] = 2;
-    v[2] = 3;
-    v[3] = 4;
+    complex_vector v( 4, 1);
+    auto start = std::chrono::high_resolution_clock::now();
+
     printVector(v);
-    fftRadix2(v, false);
+    fft(v);
     printVector(v);
-    fftRadix2(v, true);
+    fft(v, true);
     printVector(v);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
+    // std::cout << "Elapsed time: " << duration.count() << " seconds" << std::endl;
     return EXIT_SUCCESS;
 }
 
@@ -34,7 +42,7 @@ int main() {
  * 
  * @throws std::invalid_argument If the input vector is empty.
  */
-void fft(std::vector<std::complex<double>>& v, bool inverse /*= false*/) {
+void fft(complex_vector& v, bool inverse /*= false*/) {
     int n = v.size();
 
     if (n == 0) {
@@ -65,7 +73,7 @@ void fft(std::vector<std::complex<double>>& v, bool inverse /*= false*/) {
  *
  * @throws std::invalid_argument If the length of the input vector 'v' is not a power of 2, an exception is thrown.
  */
-void fftRadix2(std::vector<std::complex<double>>& v, bool inverse /*= false*/) {
+void fftRadix2(complex_vector& v, bool inverse /*= false*/) {
     // Base case
     int n = v.size();
     if (n == 1) {
@@ -78,8 +86,8 @@ void fftRadix2(std::vector<std::complex<double>>& v, bool inverse /*= false*/) {
     }
 
     // Permute to get odd and even half-vectors
-    std::vector<std::complex<double>> vEven(n / 2);
-    std::vector<std::complex<double>> vOdd(n / 2);
+    complex_vector vEven(n / 2);
+    complex_vector vOdd(n / 2);
     for (int i = 0; i < n/2; i++) {
         vEven[i] = v[2*i];
         vOdd[i] = v[2*i+1];
@@ -90,17 +98,7 @@ void fftRadix2(std::vector<std::complex<double>>& v, bool inverse /*= false*/) {
     fftRadix2(vOdd, inverse);
 
     // Combine to get full vector
-    double angle = D_PI / n * (inverse ? 1 : -1);
-    std::complex<double> w(1), wn(cos(angle), sin(angle));
-    for (int i = 0; i < n/2; i++) {
-        v[i] = vEven[i] + w * vOdd[i];
-        v[n/2 + i] = vEven[i] - w * vOdd[i];
-        if (inverse) {
-            v[i] /= 2;
-            v[n/2 + i] /= 2;
-        }
-        w *= wn;
-    }
+    combineHalfVectors(v, vEven, vOdd, n, inverse);
 }
 
 /**
@@ -115,20 +113,21 @@ void fftRadix2(std::vector<std::complex<double>>& v, bool inverse /*= false*/) {
  *
  * @throws std::invalid_argument If N is not a positive integer, an exception is thrown.
  */
-std::vector<std::vector<std::complex<double>>> fourierMatrix(int N, bool inverse /*= false*/) {
+complex_matrix fourierMatrix(int N, bool inverse /*= false*/) {
     // N must be positive
     if (N <= 0) {
         throw std::invalid_argument("N must be a positive integer");
     }
 
     // Initialize Fourier matrix to all 1
-    std::vector<std::vector<std::complex<double>>> F(N, std::vector<std::complex<double>>(N, 1.0));
+    complex_matrix F(N, complex_vector(N, 1.0));
 
     // Compute fourier coefficient w
     std::complex<double> w = exp((D_PI * I) / (double) N);
     if (inverse) w = pow(w, -1);
 
     // Populate matrix
+    # pragma omp parallel for
     for (int i = 1; i < N; i++) {
         for (int j = 1; j < N; j++) {
             F[i][j] = std::complex<double>(pow(w, i*j));
@@ -138,15 +137,38 @@ std::vector<std::vector<std::complex<double>>> fourierMatrix(int N, bool inverse
 }
 
 /**
- * @brief Prints a one-dimensional vector of complex numbers to the standard output.
- *
- * This function prints the contents of a one-dimensional vector of complex numbers
- * to the standard output (typically the console). Each element of the vector is
- * separated by a space.
- *
- * @param v The vector of complex numbers to be printed.
+ * Combine the odd and even half-vectors during the FFT.
  */
-void printVector(const std::vector<std::complex<double>>& v) {
+static void combineHalfVectors(complex_vector& v, const complex_vector& vEven, const complex_vector& vOdd, int n, int inverse) {
+    double angle = D_PI / n * (inverse ? 1 : -1);
+    std::complex<double> wn(cos(angle), sin(angle));
+
+    if (n >= PARALLEL_LIMIT) {
+        #pragma omp parallel for
+        for (int i = 0; i < n/2; i++) {
+            v[i] = vEven[i] + pow(wn, i) * vOdd[i];
+            v[n/2 + i] = vEven[i] - pow(wn, i) * vOdd[i];
+            if (inverse) {
+                v[i] /= 2;
+                v[n/2 + i] /= 2;
+            }
+        }
+    } else {
+        for (int i = 0; i < n/2; i++) {
+            v[i] = vEven[i] + pow(wn, i) * vOdd[i];
+            v[n/2 + i] = vEven[i] - pow(wn, i) * vOdd[i];
+            if (inverse) {
+                v[i] /= 2;
+                v[n/2 + i] /= 2;
+            }
+        }
+    }
+}
+
+/**
+ * Prints a one-dimensional vector of complex numbers to the standard output.
+ */
+static void printVector(const complex_vector& v) {
     std::cout << "[";
     for (std::complex<double> val : v) {
         std::cout << val << ", ";
@@ -155,16 +177,10 @@ void printVector(const std::vector<std::complex<double>>& v) {
 }
 
 /**
- * @brief Prints a two-dimensional matrix of complex numbers to the standard output.
- *
- * This function prints the contents of a two-dimensional matrix of complex numbers
- * to the standard output (typically the console). Each element of the matrix is
- * separated by a space, and rows are separated by newline characters.
- *
- * @param M The matrix of complex numbers to be printed.
+ * Prints a two-dimensional matrix of complex numbers to the standard output.
  */
-void printMatrix(const std::vector<std::vector<std::complex<double>>>& M) {
-    for (std::vector<std::complex<double>> row : M) {
+static void printMatrix(complex_matrix& M) {
+    for (complex_vector row : M) {
         for (std::complex<double> val : row) {
             std::cout << val << " ";
         }
@@ -174,14 +190,8 @@ void printMatrix(const std::vector<std::vector<std::complex<double>>>& M) {
 
 /**
  * Find the next power of 2 greater than or equal to the given integer.
- *
- * This function calculates the smallest power of 2 that is greater than or equal
- * to the given integer 'n' and returns it.
- *
- * @param n An integer for which the next power of 2 needs to be found.
- * @return The smallest power of 2 greater than or equal to 'n'.
  */
-int nextPowerOf2(int n) {
+static int nextPowerOf2(int n) {
     n--;
     n |= n >> 1;
     n |= n >> 2;
@@ -194,12 +204,7 @@ int nextPowerOf2(int n) {
 
 /**
  * Find if an integer is a power of 2.
- *
- * This function evaluates whether the given integer is a power of 2.
- *
- * @param n The integer to evaluate.
- * @return True if the integer is a power of 2, false otherwise.
  */
-bool isPowerOf2(int n) {
+static bool isPowerOf2(int n) {
     return ceil(log2(n)) == floor(log2(n));
 }
