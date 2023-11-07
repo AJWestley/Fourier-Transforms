@@ -4,26 +4,17 @@
 #include <omp.h>
 #include "fourier.h"
 
-#include <chrono>
-
 const double D_PI = 2 * M_PI;
 const std::complex<double> I(0, 1);
 const unsigned int PARALLEL_LIMIT = pow(2, 8);
 
-using namespace std::chrono;
 int main() {
     complex_vector v( 4, 1);
-    auto start = std::chrono::high_resolution_clock::now();
-
     printVector(v);
     fourier::fft(v);
     printVector(v);
     fourier::fft(v, true);
     printVector(v);
-
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = end - start;
-    // std::cout << "Elapsed time: " << duration.count() << " seconds" << std::endl;
     return EXIT_SUCCESS;
 }
 
