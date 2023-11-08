@@ -73,7 +73,7 @@ namespace fourier {
         }
         
         // Error check before run
-        if (nextPowerOf2(n) != n) {
+        if (!isPowerOf2(n)) {
             throw std::invalid_argument("Length input vector not a power of 2.");
         }
 
@@ -88,8 +88,7 @@ namespace fourier {
         // Recursively calculate sub-vectors
         fftRadix2(vEven, inverse);
         fftRadix2(vOdd, inverse);
-
-        // Combine to get full vector
+        
         combineHalfVectors(v, vEven, vOdd, n, inverse);
     }
 
@@ -137,6 +136,7 @@ static void combineHalfVectors(complex_vector& v, const complex_vector& vEven, c
     double angle = D_PI / n * (inverse ? 1 : -1);
     std::complex<double> wn(cos(angle), sin(angle));
 
+    // Run in parallel if n is large enough
     if (n >= PARALLEL_LIMIT) {
         #pragma omp parallel for
         for (int i = 0; i < n/2; i++) {
