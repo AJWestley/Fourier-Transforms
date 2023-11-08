@@ -4,19 +4,23 @@
 #include <omp.h>
 #include "fourier.h"
 
+/* ---------- Constants ---------- */
 const double D_PI = 2 * M_PI;
 const std::complex<double> I(0, 1);
 const unsigned int PARALLEL_LIMIT = pow(2, 8);
 
+using namespace fourier;
+
 int main() {
-    complex_vector v( 4, 1);
-    printVector(v);
-    fourier::fft(v);
-    printVector(v);
-    fourier::fft(v, true);
-    printVector(v);
+    std::vector<int> f = {1, 2, 3}, g = {4, 5, 6};
+    printVector(f);
+    printVector(g);
+    std::vector<int> h = toIntVector(convolve(toComplexVector(f), toComplexVector(g)));
+    printVector(h);
     return EXIT_SUCCESS;
 }
+
+/* ---------- Main Methods ---------- */
 
 namespace fourier {
     /**
@@ -93,6 +97,37 @@ namespace fourier {
     }
 
     /**
+     * @brief Computes the discrete convolution of two vectors.
+     *
+     * This calculates the discrete convolution of two complex-valued input vectors. 
+     * The vectors are both zero-padded and made to be equal in size.
+     *
+     * @param f The first vector to convolve.
+     * @param g The second vector to convolve.
+     *
+     * @return The discrete convolution between vactors 'f' and 'g'.
+     */
+    complex_vector convolve(complex_vector f, complex_vector g) {
+        int fLength = f.size(), gLength = g.size();
+        f.resize(2 * fLength, 0);
+        g.resize(2 * gLength, 0);
+        if (fLength < gLength) f.resize(gLength, 0);
+        else if (gLength < fLength) g.resize(fLength, 0);
+
+        fft(f);
+        fft(g);
+
+        int n = f.size();
+        for (int i = 0; i < n; i++) {
+            f[i] = f[i] * g[i];
+        }
+
+        fft(f, true);
+
+        return f;
+    }
+
+    /**
      * @brief Generates a Fourier matrix of size N.
      *
      * This function generates a square Fourier matrix of size N, containing complex values.
@@ -126,7 +161,63 @@ namespace fourier {
         }
         return F;
     }
+
+    /* ---------- Supplementary Methods ---------- */
+
+    /**
+     * @brief Casts a vector of any type to a complex-valued vector.
+     *
+     * @param v The vector to be cast.
+     *
+     * @return A complex-valued cast of the input vector 'v'.
+     */
+    template <typename T>
+    complex_vector toComplexVector(const std::vector<T> &v) {
+        int n = v.size();
+        complex_vector x(n);
+        for (int i = 0; i < n; i++)
+        {
+            x[i] = std::complex<double>(v[i]);
+        }
+        return x;
+    }
+
+    /**
+     * @brief Casts a complex-valued vector to an integer-valued vector.
+     *
+     * @param v The vector to be cast.
+     *
+     * @return An integer-valued cast of the input vector 'v'.
+     */
+    std::vector<int> toIntVector(const complex_vector &v) {
+        int n = v.size();
+        std::vector<int> x(n);
+        for (int i = 0; i < n; i++) {
+            x[i] = round(real(v[i]));
+        }
+        return x;
+    }
+
+    /**
+     * @brief Casts a complex-valued vector to a real-valued vector.
+     *
+     * @param v The vector to be cast.
+     *
+     * @return A real-valued cast of the input vector 'v'.
+     */
+    std::vector<double> toDoubleVector(const complex_vector &v, int precision /*= 6*/) {
+        int n = v.size();
+        std::vector<double> x(n);
+        for (int i = 0; i < n; i++)
+        {
+            int p = pow(10, precision);
+            x[i] = (double)round(real(v[i]) * p) / (double) p;
+        }
+        return x;
+    }
 }
+
+/* ---------- Aux Methods ---------- */
 
 /**
  * Combine the odd and even half-vectors during the FFT.
@@ -162,9 +253,10 @@ static void combineHalfVectors(complex_vector& v, const complex_vector& vEven, c
 /**
  * Prints a one-dimensional vector of complex numbers to the standard output.
  */
-static void printVector(const complex_vector& v) {
+template <typename T>
+static void printVector(const std::vector<T> &v) {
     std::cout << "[";
-    for (std::complex<double> val : v) {
+    for (T val : v) {
         std::cout << val << ", ";
     }
     std::cout << "\b\b]" << std::endl;
@@ -173,9 +265,10 @@ static void printVector(const complex_vector& v) {
 /**
  * Prints a two-dimensional matrix of complex numbers to the standard output.
  */
-static void printMatrix(complex_matrix& M) {
-    for (complex_vector row : M) {
-        for (std::complex<double> val : row) {
+template <typename T>
+static void printMatrix(const std::vector<std::vector<T>> &M) {
+    for (std::vector<T> row : M) {
+        for (T val : row) {
             std::cout << val << " ";
         }
         std::cout << std::endl;
