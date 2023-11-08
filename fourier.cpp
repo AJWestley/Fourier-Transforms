@@ -7,7 +7,7 @@
 /* ---------- Constants ---------- */
 const double D_PI = 2 * M_PI;
 const std::complex<double> I(0, 1);
-const unsigned int PARALLEL_LIMIT = pow(2, 8);
+const int PARALLEL_LIMIT = pow(2, 8); // Determines when the FFT needs to parallelize
 
 using namespace fourier;
 
