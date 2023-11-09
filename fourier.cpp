@@ -1,7 +1,3 @@
-#include <complex>
-#include <vector>
-#include <iostream>
-#include <omp.h>
 #include "fourier.h"
 
 /* ---------- Constants ---------- */

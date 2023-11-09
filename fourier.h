@@ -1,6 +1,11 @@
 #ifndef FOURIER_H
 #define FOURIER_H
 
+#include <complex>
+#include <vector>
+#include <iostream>
+#include <omp.h>
+
 #define complex_vector std::vector<std::complex<double>>
 #define complex_matrix std::vector<std::vector<std::complex<double>>>
 
