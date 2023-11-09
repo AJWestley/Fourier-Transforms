@@ -1,4 +1,4 @@
-#include "fourier.h"
+#include "fourier.hpp"
 
 /* ---------- Constants ---------- */
 const double D_PI = 2 * M_PI;
